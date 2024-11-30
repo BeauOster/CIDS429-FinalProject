@@ -21,6 +21,7 @@ parser.add_option("-m", "--maxlen", default=10, help="max length of job", action
 parser.add_option("-p", "--policy", default="FIFO", help="sched policy to use: SJF, FIFO, RR", action="store", type="string", dest="policy")
 parser.add_option("-q", "--quantum", help="length of time slice for RR policy", default=1, action="store", type="int", dest="quantum")
 parser.add_option("-c", help="compute answers for me", action="store_true", default=False, dest="solve")
+parser.add_option("-a", "--maxarrival", default=10, help="Set the max arrival time for jobs", action="store", type="int", dest="maxarrival") # Added new option for max arrival time here
 
 (options, args) = parser.parse_args()
 
@@ -43,15 +44,22 @@ joblist = []
 if options.jlist == '':
     for jobnum in range(0,options.jobs):
         runtime = int(options.maxlen * random.random()) + 1
-        joblist.append([jobnum, runtime])
-        print('  Job', jobnum, '( length = ' + str(runtime) + ' )')
+        arrival_time = int(options.maxarrival * random.random()) # This is used to generate a random arrival time based on the new option defined earlier
+        remaining_time = runtime # since the remaining time will equal the runtime initially
+        joblist.append([jobnum, runtime, arrival_time, remaining_time])
+        #print('  Job', jobnum, '( length = ' + str(runtime) + ' )')
+        print(f'  Job {jobnum} ( length = {runtime}, arrival = {arrival_time} )') #for easier readability (used F-strings)
 else:
     jobnum = 0
     for runtime in options.jlist.split(','):
-        joblist.append([jobnum, float(runtime)])
+        runtime = float(runtime) #this line was initiallu in joblist.append below, I just swapped it out for easier readability
+        remaining_time = runtime
+        arrival_time = int(options.maxarrival * random.random()) # This is used to generate a random arrival time based on the new option defined earlier
+        joblist.append([jobnum, runtime, arrival_time, remaining_time])
         jobnum += 1
     for job in joblist:
-        print('  Job', job[0], '( length = ' + str(job[1]) + ' )')
+        #print('  Job', job[0], '( length = ' + str(job[1]) + ' )')
+        print(f'  Job {job[0]} (length = {job[1]}, arrival = {job[2]})')
 print('\n')
 
 if options.solve == True:
