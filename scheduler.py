@@ -18,7 +18,7 @@ parser.add_option("-s", "--seed", default=0, help="the random seed", action="sto
 parser.add_option("-j", "--jobs", default=3, help="number of jobs in the system", action="store", type="int", dest="jobs")
 parser.add_option("-l", "--jlist", default="", help="instead of random jobs, provide a comma-separated list of run times", action="store", type="string", dest="jlist")
 parser.add_option("-m", "--maxlen", default=10, help="max length of job", action="store", type="int", dest="maxlen")
-parser.add_option("-p", "--policy", default="FIFO", help="sched policy to use: SJF, FIFO, RR", action="store", type="string", dest="policy")
+parser.add_option("-p", "--policy", default="FIFO", help="sched policy to use: SJF, FIFO, RR, PSJF", action="store", type="string", dest="policy")
 parser.add_option("-q", "--quantum", help="length of time slice for RR policy", default=1, action="store", type="int", dest="quantum")
 parser.add_option("-c", help="compute answers for me", action="store_true", default=False, dest="solve")
 parser.add_option("-a", "--maxarrival", default=10, help="Set the max arrival time for jobs", action="store", type="int", dest="maxarrival") # Added new option for max arrival time here
@@ -52,7 +52,7 @@ if options.jlist == '':
 else:
     jobnum = 0
     for runtime in options.jlist.split(','):
-        runtime = float(runtime) #this line was initiallu in joblist.append below, I just swapped it out for easier readability
+        runtime = float(runtime) #this line was initially in joblist.append below, I just swapped it out for easier readability
         remaining_time = runtime
         arrival_time = int(options.maxarrival * random.random()) # This is used to generate a random arrival time based on the new option defined earlier
         joblist.append([jobnum, runtime, arrival_time, remaining_time])
@@ -148,6 +148,49 @@ if options.solve == True:
         count = len(joblist)
         
         print('\n  Average -- Response: %3.2f  Turnaround %3.2f  Wait %3.2f\n' % (responseSum/count, turnaroundSum/count, waitSum/count))
+
+    if options.policy == 'PSJF':
+
+        print('Execution trace:')
+        # Sort by arrivale time and then by remaining time (incase 2 jobs have the same arrival time)
+        joblist = sorted(joblist, key=lambda x: (x[2], x[3]))
+        currentTime = 0.0 # also noted as thetime as defined above in FIFO. I like this naming better. Also changed it to a float for better precision.
+        completedJobs = 0
+        readyQueue = [] # this is needed because of premption
+        jobcount = len(joblist)
+
+        while completedJobs < jobcount:
+
+            # examines each job to see if it should be added to the ready que
+            # The job's arrival time must be <= current time (only jobs that have arrived need to be considered)
+            # the job must not already be in the ready queue, and needs remaining run time.
+            for job in joblist:
+                if job[2] <= currentTime and job not in readyQueue and job[3] > 0:
+                    readyQueue.append(job)
+
+            readyQueue = sorted(readyQueue, key=lambda x: x[3])  # Sort by remaining time
+
+            if readyQueue:
+
+                # selects the job with the shortest remaining time
+                currentJob = readyQueue[0]
+
+                currentTime += 1
+                currentJob[3] -= 1
+
+                if currentJob[3] == 0:
+                    readyQueue.remove(currentJob)
+                    completedJobs += 1
+                    #Statistics code here maybe?
+
+            # This is needed if no jobs are ready yet
+            else:
+                currentTime += 1
+        
+        # Final stats go here
+        
+
+
 
     if options.policy != 'FIFO' and options.policy != 'SJF' and options.policy != 'RR': 
         print('Error: Policy', options.policy, 'is not available.')
