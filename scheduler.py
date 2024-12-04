@@ -154,10 +154,12 @@ if options.solve == True:
         print('Execution trace:')
         # Sort by arrivale time and then by remaining time (incase 2 jobs have the same arrival time)
         joblist = sorted(joblist, key=lambda x: (x[2], x[3]))
-        currentTime = 0.0 # also noted as thetime as defined above in FIFO. I like this naming better. Also changed it to a float for better precision.
+        currentTime = 0.0 # the author did "thetime" for this instead like in the FIFO policy. I like this naming better.
         completedJobs = 0
         readyQueue = [] # this is needed because of premption
         jobcount = len(joblist)
+
+        completion_time={}
 
         while completedJobs < jobcount:
 
@@ -174,25 +176,50 @@ if options.solve == True:
 
                 # selects the job with the shortest remaining time
                 currentJob = readyQueue[0]
+                readyQueue.pop(0)
+
+                print(f"  [ time {int(currentTime):3d} ] Run job {currentJob[0]} for 1 sec (Remaining: {currentJob[3]-1} secs)")
 
                 currentTime += 1
                 currentJob[3] -= 1
 
                 if currentJob[3] == 0:
-                    readyQueue.remove(currentJob)
+                    #readyQueue.remove(currentJob)
+                    completion_time[currentJob[0]] = currentTime
                     completedJobs += 1
-                    #Statistics code here maybe?
+                    print(f"  [ time {int(currentTime):3d} ] Job {currentJob[0]} completed")
+                else:
+                    readyQueue.append(currentJob)
 
             # This is needed if no jobs are ready yet
             else:
                 currentTime += 1
         
         # Final stats go here
-        
+        turnaroundSum = 0.0
+        waitSum = 0.0
+
+        print('\nFinal statistics:')
+        for job in joblist:
+            jobnum = job[0]
+            arrival = job[2]
+            burst = job[1]
+            completion = completion_time[jobnum]
+            turnaround = completion - arrival
+            wait = turnaround - burst
+            #response = response_time[jobnum]
+
+            print(f'  Job {jobnum} -- Turnaround: {turnaround:.2f}  Wait: {wait:.2f}')
+            turnaroundSum += turnaround
+            waitSum += wait
+            #responseSum += response
+
+        count = len(joblist)
+        print(f'\n  Average -- Turnaround: {turnaroundSum/count:.2f}  Wait: {waitSum/count:.2f}\n')
 
 
 
-    if options.policy != 'FIFO' and options.policy != 'SJF' and options.policy != 'RR': 
+    if options.policy != 'FIFO' and options.policy != 'SJF' and options.policy != 'RR' and options.policy != 'PSJF': 
         print('Error: Policy', options.policy, 'is not available.')
         sys.exit(0)
 else:
