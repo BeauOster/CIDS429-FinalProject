@@ -47,7 +47,6 @@ if options.jlist == '':
         arrival_time = int(options.maxarrival * random.random()) # This is used to generate a random arrival time based on the new option defined earlier
         remaining_time = runtime # since the remaining time will equal the runtime initially
         joblist.append([jobnum, runtime, arrival_time, remaining_time])
-        #print('  Job', jobnum, '( length = ' + str(runtime) + ' )')
         print(f'  Job {jobnum} ( length = {runtime}, arrival = {arrival_time} )') #for easier readability (used F-strings)
 else:
     jobnum = 0
@@ -58,7 +57,6 @@ else:
         joblist.append([jobnum, runtime, arrival_time, remaining_time])
         jobnum += 1
     for job in joblist:
-        #print('  Job', job[0], '( length = ' + str(job[1]) + ' )')
         print(f'  Job {job[0]} (length = {job[1]}, arrival = {job[2]})')
 print('\n')
 
@@ -151,15 +149,25 @@ if options.solve == True:
 
     if options.policy == 'PSJF':
 
+        #Key Variables:
+        #- joblist: List of jobs, each represented as [job_id, run_time (burst_time), arrival_time, remaining_time].
+        #- completedJobs: Counter for the number of jobs that have been completed.
+        #- currentTime: Tracks the current time in the simulation (also noted as thetime from other schedulers)
+        #- readyQueue: Holds jobs that are ready to run (have arrived and have remaining runtime).
+        #- completion_time: Dictionary mapping job IDs to their completion times.
+
         print('Execution trace:')
-        # Sort by arrivale time and then by remaining time (incase 2 jobs have the same arrival time)
+        # Sort by arrival time and then by remaining time (this is still SJF)
+        # this line isn't necessary, since the ready queue already sorts
+        # but for this small simulation, this can simplify the process (I think)
         joblist = sorted(joblist, key=lambda x: (x[2], x[3]))
-        currentTime = 0.0 # the author did "thetime" for this instead like in the FIFO policy. I like this naming better.
+
+        currentTime = 0.0 # tracks current time for simulation
         completedJobs = 0
-        readyQueue = [] # this is needed because of premption
+        readyQueue = [] # this is needed because of premption, queue of jobs ready to be run
         jobcount = len(joblist)
 
-        completion_time={}
+        completion_time={} # maps the job ID to its completion time
 
         while completedJobs < jobcount:
 
@@ -183,12 +191,13 @@ if options.solve == True:
                 currentTime += 1
                 currentJob[3] -= 1
 
+                # If the jobs is completed record completion time and add to completed jobs
                 if currentJob[3] == 0:
-                    #readyQueue.remove(currentJob)
                     completion_time[currentJob[0]] = currentTime
                     completedJobs += 1
                     print(f"  [ time {int(currentTime):3d} ] Job {currentJob[0]} completed")
                 else:
+                    # re-add job back to queue if not complete
                     readyQueue.append(currentJob)
 
             # This is needed if no jobs are ready yet
@@ -207,12 +216,10 @@ if options.solve == True:
             completion = completion_time[jobnum]
             turnaround = completion - arrival
             wait = turnaround - burst
-            #response = response_time[jobnum]
 
             print(f'  Job {jobnum} -- Turnaround: {turnaround:.2f}  Wait: {wait:.2f}')
             turnaroundSum += turnaround
             waitSum += wait
-            #responseSum += response
 
         count = len(joblist)
         print(f'\n  Average -- Turnaround: {turnaroundSum/count:.2f}  Wait: {waitSum/count:.2f}\n')
